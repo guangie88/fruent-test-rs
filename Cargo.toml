@@ -1,0 +1,8 @@
+[package]
+name = "fruent-test-rs"
+version = "0.1.0"
+authors = ["Chen Weiguang <chen.weiguang@gmail.com>"]
+
+[dependencies]
+failure = "=0.1.1"
+fruently = "=0.9.1"
