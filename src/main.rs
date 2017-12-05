@@ -1,47 +1,61 @@
+#![cfg_attr(feature = "clippy", feature(plugin))]
+#![cfg_attr(feature = "clippy", plugin(clippy))]
+#![cfg_attr(feature = "clippy", deny(warnings))]
 #![feature(slice_patterns)]
 
-#[macro_use] extern crate failure;
+#[macro_use]
+extern crate failure;
 extern crate fruently;
+extern crate serde;
+extern crate serde_json;
+extern crate structopt;
+#[macro_use]
+extern crate structopt_derive;
 
 use failure::Error;
 use fruently::fluent::Fluent;
 use fruently::forwardable::JsonForwardable;
-use std::collections::HashMap;
-use std::env;
+use serde_json::Value;
+use structopt::StructOpt;
 
 #[derive(Debug, Fail)]
 enum FluentError {
-    #[fail(display = "")]
-    InnerFluentError {
-        e: fruently::error::FluentError,
-    },
+    #[fail(display = "")] InnerFluentError { e: fruently::error::FluentError },
 }
 
 impl From<fruently::error::FluentError> for FluentError {
     fn from(e: fruently::error::FluentError) -> FluentError {
-        FluentError::InnerFluentError{ e: e }
+        FluentError::InnerFluentError { e: e }
     }
 }
 
 type Result<T> = std::result::Result<T, Error>;
 
+#[derive(StructOpt, Debug)]
+#[structopt(name = "fruent-test-rs", about = "Test logging using fruently")]
+struct MainConfig {
+    #[structopt(short = "a", long = "addr",
+                default_value = "127.0.0.1:24224", help = "Fruentd hostname")]
+    addr: String,
+
+    #[structopt(short = "t", long = "tag", default_value = "app.rs",
+                help = "Tag to use when sending to Fruentd")]
+    tag: String,
+
+    #[structopt(short = "v", long = "value",
+                help = "JSON serializable string value to log")]
+    value: String,
+}
+
 fn run() -> Result<()> {
-    let args: Vec<_> = env::args().collect();
+    let config = MainConfig::from_args();
 
-    match *args.as_slice() {
-        [_, ref addr, ref key, ref value] => {
-            let mut obj: HashMap<String, String> = HashMap::new();
-            obj.insert(key.to_owned(), value.to_owned());
-            let fruently = Fluent::new(addr, "test-rs");
+    let v: Value = serde_json::from_str(&config.value)?;
+    let fruently = Fluent::new(config.addr.as_str(), config.tag.as_str());
 
-            fruently.post(&obj).map_err(|e| -> FluentError { e.into() })?;
-            Ok(())
-        },
+    fruently.post(&v).map_err(|e| -> FluentError { e.into() })?;
 
-        _ => {
-            bail!("Usage: program <address (e.g. 127.0.0.1:24224)> <key> <value>");
-        },
-    }
+    Ok(())
 }
 
 fn main() {
