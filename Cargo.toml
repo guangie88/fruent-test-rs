@@ -1,12 +1,12 @@
 [package]
 name = "fruent-test-rs"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Chen Weiguang <chen.weiguang@gmail.com>"]
 
 [dependencies]
 clippy = {version = "*", optional = true}
 failure = "=0.1.1"
-fruently = "=0.9.1"
+fruently = { git = "https://github.com/guangie88/fruently.git", rev = "4db5ece" }
 serde = "=1.0.23"
 serde_json = "=1.0.7"
 structopt = "=0.1.6"
